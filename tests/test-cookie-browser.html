@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HttpOnly Cookie Authentication Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .success {
+            color: green;
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            color: red;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            color: #004085;
+            background-color: #d1ecf1;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .approach {
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .approach.cookie {
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+        }
+        .approach.token {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            background-color: #e9ecef;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab-button.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 HttpOnly Cookie Authentication Test</h1>
+    
+    <div class="section">
+        <h2>Authentication Approach Comparison</h2>
+        <div class="comparison">
+            <div class="approach cookie">
+                <h3>✅ HttpOnly Cookie (Secure)</h3>
+                <ul>
+                    <li>Token stored in HttpOnly cookie</li>
+                    <li>Not accessible to JavaScript</li>
+                    <li>Protected from XSS attacks</li>
+                    <li>Sent automatically with requests</li>
+                    <li>Endpoint: /api/cookie/*</li>
+                </ul>
+            </div>
+            <div class="approach token">
+                <h3>⚠️ Token in Response (Traditional)</h3>
+                <ul>
+                    <li>Token returned in response body</li>
+                    <li>Stored in localStorage/memory</li>
+                    <li>Vulnerable to XSS if in localStorage</li>
+                    <li>Must add to headers manually</li>
+                    <li>Endpoint: /api/*</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Test Authentication</h2>
+        
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="switchTab('cookie')">Cookie Authentication</button>
+            <button class="tab-button" onclick="switchTab('token')">Token Authentication</button>
+        </div>
+        
+        <!-- Cookie Authentication Tab -->
+        <div id="cookie-tab" class="tab-content active">
+            <h3>HttpOnly Cookie Authentication</h3>
+            <p>This approach stores the JWT token in an HttpOnly cookie that JavaScript cannot access.</p>
+            
+            <button onclick="loginWithCookie()">1. Login (Cookie)</button>
+            <button onclick="checkAuthCookie()">2. Check Auth Status</button>
+            <button onclick="getUserProfileCookie()">3. Get User Profile</button>
+            <button onclick="getProductsCookie()">4. Get Products</button>
+            <button onclick="logoutCookie()">5. Logout</button>
+            
+            <div class="info">
+                <strong>Note:</strong> The JWT token is stored as an HttpOnly cookie and cannot be accessed via JavaScript. 
+                Try opening DevTools and typing <code>document.cookie</code> - you won't see the jwt_token!
+            </div>
+        </div>
+        
+        <!-- Token Authentication Tab -->
+        <div id="token-tab" class="tab-content">
+            <h3>Traditional Token Authentication</h3>
+            <p>This approach returns the JWT token in the response body for client-side storage.</p>
+            
+            <button onclick="loginWithToken()">1. Login (Token)</button>
+            <button onclick="showStoredToken()">2. Show Stored Token</button>
+            <button onclick="getUserProfileToken()">3. Get User Profile</button>
+            <button onclick="getProductsToken()">4. Get Products</button>
+            <button onclick="clearToken()">5. Clear Token</button>
+            
+            <div class="info">
+                <strong>Current Token:</strong> <span id="token-display">None</span>
+            </div>
+        </div>
+        
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        let storedToken = null;
+
+        function switchTab(tab) {
+            // Update buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tab}-tab`).classList.add('active');
+        }
+
+        function showOutput(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = message;
+            output.insertBefore(div, output.firstChild);
+        }
+
+        // ===== COOKIE AUTHENTICATION FUNCTIONS =====
+        
+        async function loginWithCookie() {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login/cookie`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include', // IMPORTANT: Include cookies
+                    body: JSON.stringify({
+                        username: 'MY_USERNAME',
+                        password: 'MY_PASSWORD',
+                        device_id: 'browser-test'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showOutput(`
+                        <strong>✅ Login Successful (Cookie)</strong><br>
+                        Message: ${data.message}<br>
+                        User: ${data.user ? data.user.fullName : 'N/A'}<br>
+                        <strong>Note:</strong> JWT token stored as HttpOnly cookie (not visible to JavaScript)
+                    `, 'success');
+                    
+                    // Check if we can see the cookie (we shouldn't see jwt_token)
+                    showOutput(`
+                        <strong>Cookies visible to JavaScript:</strong><br>
+                        <code>${document.cookie || 'None (or only non-HttpOnly cookies)'}</code>
+                    `, 'info');
+                } else {
+                    showOutput(`❌ Login failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showOutput(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkAuthCookie() {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/check`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showOutput(`✅ Authenticated: ${data.authenticated}`, 'success');
+                } else {
+                    showOutput(`❌ Not authenticated`, 'error');
+                }
+            } catch (error) {
+                showOutput(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function getUserProfileCookie() {
+            try {
+                const response = await fetch(`${API_BASE}/api/cookie/user/profile`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showOutput(`
+                        <strong>✅ User Profile (Cookie Auth)</strong><br>
+                        Username: ${data.data.username}<br>
+                        Role: ${data.data.role}<br>
+                        <strong>Note:</strong> No Authorization header needed - cookie sent automatically!
+                    `, 'success');
+                } else {
+                    showOutput(`❌ Failed to get profile (not authenticated?)`, 'error');
+                }
+            } catch (error) {
+                showOutput(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function getProductsCookie() {
+            try {
+                const response = await fetch(`${API_BASE}/api/cookie/products`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showOutput(`
+                        <strong>✅ Products Retrieved (Cookie Auth)</strong><br>
+                        Count: ${data.data.length} products<br>
+                        First: ${data.data[0].name}
+                    `, 'success');
+                } else {
+                    showOutput(`❌ Failed to get products (not authenticated?)`, 'error');
+                }
+            } catch (error) {
+                showOutput(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function logoutCookie() {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                showOutput(`✅ Logged out: ${data.message}`, 'success');
+            } catch (error) {
+                showOutput(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // ===== TOKEN AUTHENTICATION FUNCTIONS =====
+        
+        async function loginWithToken() {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: 'MY_USERNAME',
+                        password: 'MY_PASSWORD',
+                        device_id: 'browser-test'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    storedToken = data.token;
+                    document.getElementById('token-display').textContent = storedToken.substring(0, 50) + '...';
+                    
+                    showOutput(`
+                        <strong>✅ Login Successful (Token)</strong><br>
+                        Message: ${data.message}<br>
+                        Token: ${storedToken.substring(0, 50)}...<br>
+                        <strong>Warning:</strong> Token is accessible to JavaScript (XSS vulnerable if stored in localStorage)
+                    `, 'success');
+                    
+                    // Demonstrate that we can access the token
+                    showOutput(`
+                        <strong>Token stored in JavaScript variable:</strong><br>
+                        <code>${storedToken.substring(0, 100)}...</code>
+                    `, 'info');
+                } else {
+                    showOutput(`❌ Login failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showOutput(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function showStoredToken() {
+            if (storedToken) {
+                showOutput(`
+                    <strong>Stored Token:</strong><br>
+                    <code>${storedToken}</code><br>
+                    <strong>⚠️ Security Risk:</strong> This token is accessible to any JavaScript code!
+                `, 'info');
+            } else {
+                showOutput(`No token stored. Please login first.`, 'error');
+            }
+        }
+        
+        async function getUserProfileToken() {
+            if (!storedToken) {
+                showOutput(`❌ No token available. Please login first.`, 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/user/profile`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${storedToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showOutput(`
+                        <strong>✅ User Profile (Token Auth)</strong><br>
+                        Username: ${data.data.username}<br>
+                        Role: ${data.data.role}<br>
+                        <strong>Note:</strong> Had to manually add Authorization header
+                    `, 'success');
+                } else {
+                    showOutput(`❌ Failed to get profile (token invalid?)`, 'error');
+                }
+            } catch (error) {
+                showOutput(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function getProductsToken() {
+            if (!storedToken) {
+                showOutput(`❌ No token available. Please login first.`, 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/products`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${storedToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showOutput(`
+                        <strong>✅ Products Retrieved (Token Auth)</strong><br>
+                        Count: ${data.data.length} products<br>
+                        First: ${data.data[0].name}
+                    `, 'success');
+                } else {
+                    showOutput(`❌ Failed to get products (token invalid?)`, 'error');
+                }
+            } catch (error) {
+                showOutput(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearToken() {
+            storedToken = null;
+            document.getElementById('token-display').textContent = 'None';
+            showOutput(`✅ Token cleared from memory`, 'success');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Cursor Rules (Repo-wide)
+#
+# This file exists to keep future AI-assisted changes consistent with this repo’s
+# architecture, auth model, Temporal setup, and documentation practices.
+#
+# Detailed rules live in: `.cursor/rules/laravel-template.mdc`
+# (Cursor reads `.cursor/rules/*.mdc` automatically.)
+
+

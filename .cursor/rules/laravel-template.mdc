@@ -1,0 +1,121 @@
+---
+alwaysApply: true
+---
+
+# Laravel Template – AI Development Rules (Cursor)
+
+## Goal
+
+Keep all changes consistent with this repo’s:
+- **Clean architecture** (Controller → Service → Repository)
+- **Stateless JWT auth** (Bearer + HttpOnly cookie, unified middleware)
+- **Temporal setup** (RoadRunner worker + Temporal PHP SDK)
+- **Docs + Postman** staying accurate after changes
+
+## Repo context (do not fight it)
+
+- **Laravel app lives under `src/`** (this repo is Docker-first).
+- **Routes**: `src/routes/api.php` is the source of truth.
+- **Controllers**: `src/app/Http/Controllers/Api/*`
+- **Middleware**: `src/app/Http/Middleware/JwtAuthentication.php`
+- **Services**: `src/app/Services/*` (interfaces under `src/app/Services/Interfaces/*`)
+- **Repositories**: `src/app/Repositories/*` (interfaces under `src/app/Repositories/Interfaces/*`)
+- **Response envelope helper**: `src/app/Http/Responses/ApiResponse.php`
+- **Temporal**:
+  - Workflows: `src/app/Temporal/Workflows/*`
+  - Activities: `src/app/Temporal/Activities/*`
+  - Worker: `src/worker.php`
+  - RoadRunner config: `src/.rr.yaml`
+  - SDK config: `src/config/temporal.php`
+  - Client binding: `src/app/Providers/TemporalServiceProvider.php`
+
+## Architecture rules (must follow)
+
+- **Controllers are thin**:
+  - Validate input (prefer `FormRequest` in `src/app/Http/Requests/*`)
+  - Build DTOs where appropriate (e.g. `src/app/DTOs/*`)
+  - Call a Service
+  - Return JSON
+  - **No business logic** in controllers
+
+- **Services own orchestration/business logic**:
+  - External HTTP calls belong here (see `AuthenticationService`)
+  - Transactions/orchestration belong here (or in repo when strictly persistence-related)
+
+- **Repositories own persistence**:
+  - Any Eloquent query logic belongs in repositories, not controllers
+  - Prefer updating/creating via repository methods (see `UserRepository::createOrUpdateFromExternalAuth`)
+
+- **Keep interfaces in sync**:
+  - If you add/remove a method, update both interface + implementation(s).
+
+## Authentication rules (critical)
+
+- This API is **stateless**:
+  - Do **not** introduce server-side session auth flows or token storage.
+  - Do **not** store JWT tokens in DB.
+
+- **Unified token extraction**:
+  - Protected routes must use `jwt.auth` middleware.
+  - Middleware prefers cookie `jwt_token`, falls back to Bearer token.
+
+- **Cookie auth specifics**:
+  - Login cookie route: `POST /api/auth/login/cookie` (same controller, different route name)
+  - Auth check route: `GET /api/auth/check`
+  - Cookie names:
+    - `jwt_token` (HttpOnly)
+    - `is_authenticated` (JS-readable helper)
+
+- **External auth integration**:
+  - External service base URL: `AUTH_BASE_URL`
+  - External service returns JWT in **response header** `token` (primary).
+
+- **No unsupported endpoints**:
+  - Do not re-add `/api/user/change-password` (password changes belong to external auth).
+
+## Temporal rules (must follow)
+
+- **Workflows must be deterministic**:
+  - No `sleep()`, random, DB calls, HTTP calls, or `now()` usage inside Workflows.
+  - Use `Workflow::timer(...)`, `Workflow::await(...)`.
+  - Put side effects in **Activities**.
+
+- **When adding Temporal examples**:
+  - Add Workflow interface + implementation under `src/app/Temporal/Workflows`
+  - Add Activity interface + implementation under `src/app/Temporal/Activities` (if needed)
+  - Register in `src/worker.php`:
+    - `registerWorkflowTypes(...)`
+    - `registerActivityImplementations(...)`
+  - Add API endpoint to `src/app/Http/Controllers/Api/TemporalExamplesController.php`
+  - Add route under `/api/temporal/examples/*` in `src/routes/api.php`
+  - Update docs: `TEMPORAL.md` + `TEMPORAL_EXAMPLES.md`
+
+## API response conventions
+
+- Prefer `ApiResponse::success(...)` and `ApiResponse::error(...)` for new endpoints.
+- Keep response JSON stable and consistent:
+  - `success: true|false`
+  - `message` when helpful
+  - `data` payload for content
+
+## Documentation + tooling rules (required after changes)
+
+When you change routes, auth behavior, or Temporal examples:
+- Update `README.md` (Quick Reference + relevant sections)
+- Update Postman collection: `Laravel-API-Collection.postman_collection.json`
+- Update route docs:
+  - Run (or instruct to run) `.\tests\generate-api-docs.ps1` to regenerate `API_ROUTES.md`
+
+## PowerShell scripts location
+
+- Keep scripts in `tests/` (repo root should not accumulate `*.ps1`).
+
+## Editing discipline (AI safety)
+
+- Prefer minimal diffs.
+- Don’t invent endpoints or docs: always align to `src/routes/api.php` and real code.
+- If removing a feature/endpoint:
+  - Remove route
+  - Remove controller method
+  - Remove service/repo interface references
+  - Remove Postman/docs references
