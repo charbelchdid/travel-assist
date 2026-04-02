@@ -1,0 +1,1028 @@
+{
+  "info": {
+    "name": "Laravel API with Custom JWT Auth",
+    "description": "Complete API collection for Laravel application with custom JWT authentication integrated with external service (https://testbackerp.teljoy.io)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "workflowId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pageCode",
+      "value": "Permissions",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.token) {",
+                  "        pm.collectionVariables.set('authToken', response.token);",
+                  "        console.log('Token saved to collection variables');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"MY_USERNAME\",\n    \"password\": \"MY_PASSWORD\",\n    \"device_id\": \"postman-client\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticate user with external service. Credentials are base64 encoded and sent to https://testbackerp.teljoy.io/public/login/jwt"
+          }
+        },
+        {
+          "name": "Validate Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "validate"]
+            },
+            "description": "Validate if the current JWT token is still valid"
+          }
+        },
+        {
+          "name": "Login (Cookie)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"MY_USERNAME\",\n    \"password\": \"MY_PASSWORD\",\n    \"device_id\": \"postman-client\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login/cookie",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login", "cookie"]
+            },
+            "description": "Cookie-based login. Sets HttpOnly cookie `jwt_token` and a JS-readable `is_authenticated` cookie. Postman will store cookies per-domain."
+          }
+        },
+        {
+          "name": "Check Auth (Cookie)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/check",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "check"]
+            },
+            "description": "Cookie auth status check. Validates `jwt_token` cookie and clears cookies if invalid/expired."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Logout user (client-side token removal, can be extended for token blacklisting)"
+          }
+        }
+      ],
+      "description": "Authentication endpoints for JWT token management"
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "profile"]
+            },
+            "description": "Get current authenticated user's profile information"
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"+1234567890\",\n    \"preferences\": {\n        \"language\": \"en\",\n        \"timezone\": \"UTC\",\n        \"notifications\": true\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "profile"]
+            },
+            "description": "Update current user's profile information"
+          }
+        },
+        {
+          "name": "Get Activity Log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user/activity?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "activity"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of activity records to return"
+                }
+              ]
+            },
+            "description": "Get user's activity log history"
+          }
+        },
+        {
+          "name": "Get Myself",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/myself",
+              "host": ["{{baseUrl}}"],
+              "path": ["myself"]
+            },
+            "description": "Alternative user info endpoint (compatible with external-service-like response format)"
+          }
+        }
+      ],
+      "description": "User profile and account management endpoints"
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Get Products List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?per_page=15&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "Number of items per page"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search term for filtering products"
+                }
+              ]
+            },
+            "description": "Get paginated list of products with optional search"
+          }
+        },
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "    const r = pm.response.json();",
+                  "    if (r && r.data && r.data.id) {",
+                  "        pm.collectionVariables.set('productId', String(r.data.id));",
+                  "        console.log('productId saved to collection variables:', r.data.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"New Product\",\n    \"price\": 99.99,\n    \"stock\": 100,\n    \"category\": \"Electronics\",\n    \"description\": \"Product description here\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "description": "Create a new product"
+          }
+        },
+        {
+          "name": "Get Product Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "description": "Get detailed information about a specific product"
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Product Name\",\n    \"price\": 129.99,\n    \"stock\": 75,\n    \"category\": \"Electronics\",\n    \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "description": "Update an existing product"
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "description": "Delete a product by ID"
+          }
+        },
+        {
+          "name": "Get Product Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/categories/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "categories", "list"]
+            },
+            "description": "Get list of all product categories"
+          }
+        }
+      ],
+      "description": "Product management endpoints"
+    },
+    {
+      "name": "Resources",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/resources/dashboard-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["resources", "dashboard-stats"]
+            },
+            "description": "Example protected resource endpoint (dashboard stats)"
+          }
+        },
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/resources/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["resources", "notifications"]
+            },
+            "description": "Example protected resource endpoint (notifications list)"
+          }
+        }
+      ],
+      "description": "Additional resource endpoints"
+    },
+    {
+      "name": "Temporal Examples",
+      "item": [
+        {
+          "name": "Start Greeting Workflow",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"world\",\n    \"workflow_id\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/greeting/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "greeting", "start"]
+            },
+            "description": "Starts GreetingWorkflow (Workflow → Activity). Requires Temporal worker running."
+          }
+        },
+        {
+          "name": "Start Order Workflow",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"order_id\": \"\",\n    \"workflow_id\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/order/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "order", "start"]
+            },
+            "description": "Starts OrderWorkflow (signals + query + timer + activity)."
+          }
+        },
+        {
+          "name": "Signal Order: add-item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"item\": \"item-1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/order/{{workflowId}}/signal/add-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "order", "{{workflowId}}", "signal", "add-item"]
+            },
+            "description": "Signal OrderWorkflow to add an item. Set `workflowId` (collection/environment variable) to the workflow id returned from start."
+          }
+        },
+        {
+          "name": "Signal Order: cancel",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/order/{{workflowId}}/signal/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "order", "{{workflowId}}", "signal", "cancel"]
+            },
+            "description": "Signal OrderWorkflow to cancel. Set `workflowId`."
+          }
+        },
+        {
+          "name": "Query Order: status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/order/{{workflowId}}/query/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "order", "{{workflowId}}", "query", "status"]
+            },
+            "description": "Query OrderWorkflow status. Set `workflowId`."
+          }
+        },
+        {
+          "name": "Start Child Workflow Example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"value\": 41,\n    \"workflow_id\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/child/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "child", "start"]
+            },
+            "description": "Starts ParentWorkflow which spawns ChildWorkflow."
+          }
+        },
+        {
+          "name": "Start Retry Workflow Example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"succeed_on_attempt\": 3,\n    \"workflow_id\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/retry/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "retry", "start"]
+            },
+            "description": "Starts RetryWorkflow (FlakyActivity retries)."
+          }
+        },
+        {
+          "name": "Start Continue-As-New Example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"items\": [1,2,3,4,5,6,7,8,9,10],\n    \"batch_size\": 5,\n    \"workflow_id\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/continue-as-new/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "continue-as-new", "start"]
+            },
+            "description": "Starts ContinueAsNewWorkflow (history control)."
+          }
+        },
+        {
+          "name": "Start Saga Example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"order_id\": \"\",\n    \"amount_cents\": 50,\n    \"workflow_id\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/saga/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "saga", "start"]
+            },
+            "description": "Starts SagaWorkflow (compensations). Uses `amount_cents < 100` to intentionally fail and run compensations."
+          }
+        },
+        {
+          "name": "Start Payment Monitor Example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"payment_uuid\": \"00000000-0000-0000-0000-000000000000\",\n    \"poll_seconds\": 10,\n    \"max_attempts\": 30,\n    \"workflow_id\": \"\"\n}\n"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/payment-monitor/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "payment-monitor", "start"]
+            },
+            "description": "Starts PaymentStatusMonitorWorkflow (polls ERP /payment/check-status via Activity)."
+          }
+        },
+        {
+          "name": "Signal Payment Monitor: webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"reference\": \"00000000-0000-0000-0000-000000000000\"\n  }\n}\n"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/payment-monitor/{{workflowId}}/signal/webhook",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "payment-monitor", "{{workflowId}}", "signal", "webhook"]
+            },
+            "description": "Signal PaymentStatusMonitorWorkflow that a webhook was received (stored for observability; workflow verifies via Activity). Set `workflowId`."
+          }
+        },
+        {
+          "name": "Query Payment Monitor: status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/temporal/examples/payment-monitor/{{workflowId}}/query/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["temporal", "examples", "payment-monitor", "{{workflowId}}", "query", "status"]
+            },
+            "description": "Query PaymentStatusMonitorWorkflow status. Set `workflowId`."
+          }
+        }
+      ],
+      "description": "Temporal example endpoints (Workflows/Activities/Signals/Queries). Requires Temporal worker running."
+    },
+    {
+      "name": "ERP (MVP)",
+      "item": [
+        {
+          "name": "ERP: isAuthorized",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/erp/is-authorized?pageCode=employee_dashboard&apiUrl=GET%20%2Fadmin%2Fpicklist%2Fpage%2Fsearch.*",
+              "host": ["{{baseUrl}}"],
+              "path": ["erp", "is-authorized"],
+              "query": [
+                {
+                  "key": "pageCode",
+                  "value": "employee_dashboard"
+                },
+                {
+                  "key": "apiUrl",
+                  "value": "GET /admin/picklist/page/search.*"
+                }
+              ]
+            },
+            "description": "Proxies ERP `/admin/mvp/isAuthorized`. Requires JWT auth."
+          }
+        },
+        {
+          "name": "ERP: E-Payment Transaction Statuses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/erp/epayment-transaction/statuses",
+              "host": ["{{baseUrl}}"],
+              "path": ["erp", "epayment-transaction", "statuses"]
+            },
+            "description": "Proxies ERP `/admin/epayment-transaction/statuses`."
+          }
+        },
+        {
+          "name": "ERP: E-Payment Create Transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"relatedEntityId\": 12345,\n  \"entityType\": \"ORDER\",\n  \"identifier\": \"ORD-2026-0001\",\n  \"amount\": 150.75,\n  \"description\": \"Admin payment for order ORD-2026-0001\",\n  \"customParams\": {\n    \"cart_currency\": \"USD\",\n    \"customer_email\": \"customer@example.com\"\n  },\n  \"customRedirectUrl\": \"https://<your-domain>/admin/#/payments/success\",\n  \"customFailRedirectUrl\": \"https://<your-domain>/admin/#/payments/fail\",\n  \"referer\": \"https://<your-domain>/admin\"\n}\n"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/erp/epayment-transaction/create-transaction",
+              "host": ["{{baseUrl}}"],
+              "path": ["erp", "epayment-transaction", "create-transaction"]
+            },
+            "description": "Proxies ERP `/admin/epayment-transaction/create-transaction`. May return `302 Found` with `Location` header (hosted payment page)."
+          }
+        },
+        {
+          "name": "ERP: OCR Extract",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/erp/ocr/extract",
+              "host": ["{{baseUrl}}"],
+              "path": ["erp", "ocr", "extract"]
+            },
+            "description": "Proxies ERP `/admin/mvp/OCRExtract`. Upload `file` as multipart/form-data."
+          }
+        },
+        {
+          "name": "ERP: OCR Detect Attachment Type",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/erp/ocr/detect-attachment-type",
+              "host": ["{{baseUrl}}"],
+              "path": ["erp", "ocr", "detect-attachment-type"]
+            },
+            "description": "Proxies ERP `/admin/mvp/OCRDetectAttachmentType`."
+          }
+        },
+        {
+          "name": "ERP: OCR Get Text",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/erp/ocr/get-text",
+              "host": ["{{baseUrl}}"],
+              "path": ["erp", "ocr", "get-text"]
+            },
+            "description": "Proxies ERP `/admin/mvp/OCRGetText`."
+          }
+        },
+        {
+          "name": "ERP: OCR Passport Service",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/erp/ocr/passport-service",
+              "host": ["{{baseUrl}}"],
+              "path": ["erp", "ocr", "passport-service"]
+            },
+            "description": "Proxies ERP `/admin/mvp/OCRPassportService`."
+          }
+        },
+        {
+          "name": "ERP: Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"templateName\": \"SOME_TEMPLATE_CODE\",\n  \"lang\": \"en\",\n  \"target\": [\n    {\n      \"id\": -1,\n      \"entityType\": \"ExternalTarget\",\n      \"receiverName\": \"ExternalTarget\",\n      \"mobileNumber\": \"+9715xxxxxxx\",\n      \"whatsappNumber\": \"+9715xxxxxxx\",\n      \"smsReceiverType\": null\n    }\n  ],\n  \"parameters\": {\n    \"name\": \"John\"\n  }\n}\n"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/erp/send-message",
+              "host": ["{{baseUrl}}"],
+              "path": ["erp", "send-message"]
+            },
+            "description": "Proxies ERP `/admin/mvp/SendMessage`."
+          }
+        }
+      ],
+      "description": "ERP proxy endpoints under `/api/erp/*` (MVPController + Admin E-Payment)."
+    },
+    {
+      "name": "Payment (Public Proxy)",
+      "item": [
+        {
+          "name": "Payment: Check Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payment/check-status?paymentID=00000000-0000-0000-0000-000000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "check-status"],
+              "query": [
+                {
+                  "key": "paymentID",
+                  "value": "00000000-0000-0000-0000-000000000000"
+                }
+              ]
+            },
+            "description": "Proxies ERP `/payment/check-status`. Note: upstream may be blocked by reverse proxy rules in some deployments."
+          }
+        },
+        {
+          "name": "Payment: Webhook JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"reference\": \"00000000-0000-0000-0000-000000000000\"\n  }\n}\n"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payment/webhook-json",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "webhook-json"]
+            },
+            "description": "Proxies ERP `/payment/webhook-json`. Returns plain text (typically `done`). Note: upstream may be blocked by reverse proxy rules in some deployments."
+          }
+        }
+      ],
+      "description": "Public proxy endpoints under `/api/payment/*` (ERPEPaymentController)."
+    },
+    {
+      "name": "Cookie Auth (Convenience Routes)",
+      "item": [
+        {
+          "name": "Cookie: Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cookie/user/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["cookie", "user", "profile"]
+            },
+            "description": "Cookie-protected alias of /user/profile. Requires `jwt_token` cookie (use Login (Cookie) first)."
+          }
+        },
+        {
+          "name": "Cookie: Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cookie/user/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["cookie", "user", "profile"]
+            },
+            "description": "Cookie-protected alias of /user/profile update."
+          }
+        },
+        {
+          "name": "Cookie: Get Products List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cookie/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["cookie", "products"]
+            },
+            "description": "Cookie-protected alias of GET /products."
+          }
+        },
+        {
+          "name": "Cookie: Get Product Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cookie/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cookie", "products", "{{productId}}"]
+            },
+            "description": "Cookie-protected alias of GET /products/{id}."
+          }
+        }
+      ],
+      "description": "Cookie-prefixed convenience routes under `/api/cookie/*`."
+    },
+    {
+      "name": "Authorization (pageCode)",
+      "item": [
+        {
+          "name": "Dashboard Stats (authorized: Permissions)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "pageCode",
+                "value": "Permissions"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/resources/dashboard-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["resources", "dashboard-stats"]
+            },
+            "description": "Protected endpoint with pageCode authorization enabled. Sends header `pageCode: Permissions`."
+          }
+        },
+        {
+          "name": "Dashboard Stats (not authorized: testPageCode)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "pageCode",
+                "value": "testPageCode"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/resources/dashboard-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["resources", "dashboard-stats"]
+            },
+            "description": "Protected endpoint with pageCode authorization enabled. Sends header `pageCode: testPageCode` (expected 403)."
+          }
+        }
+      ],
+      "description": "If a request includes the `pageCode` header on a protected endpoint, the API will call ERP `/admin/mvp/isAuthorized` to decide allow/deny. If the header is omitted, the check is skipped."
+    },
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Public endpoint to check API health status"
+          }
+        }
+      ],
+      "description": "System health and status endpoints"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Log response time",
+          "console.log('Response time: ' + pm.response.responseTime + 'ms');",
+          "",
+          "// Check for common HTTP status codes",
+          "if (pm.response.code === 401) {",
+          "    console.warn('Unauthorized - Token may be expired or invalid');",
+          "} else if (pm.response.code === 404) {",
+          "    console.warn('Endpoint not found');",
+          "} else if (pm.response.code === 500) {",
+          "    console.error('Server error occurred');",
+          "}"
+        ]
+      }
+    }
+  ]
+}
