@@ -1,3 +1,4 @@
 .cursor/
 rr-log-tail.txt
 .DS_Store
+/vendor

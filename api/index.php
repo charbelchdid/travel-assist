@@ -26,5 +26,12 @@ foreach ($storageDirs as $dir) {
     }
 }
 
-// Forward to Laravel's standard entry point
-require __DIR__ . '/../public/index.php';
+// Bootstrap Laravel directly (root vendor autoloader + src/ app)
+define('LARAVEL_START', microtime(true));
+
+require __DIR__ . '/../vendor/autoload.php';
+
+/** @var \Illuminate\Foundation\Application $app */
+$app = require_once __DIR__ . '/../src/bootstrap/app.php';
+
+$app->handleRequest(\Illuminate\Http\Request::capture());
