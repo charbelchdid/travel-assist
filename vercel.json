@@ -12,8 +12,11 @@
         }
     ],
     "env": {
+        "APP_NAME": "TravelAssist",
         "APP_ENV": "production",
         "APP_DEBUG": "true",
+        "APP_KEY": "base64:JwNKBuXAcW1P9bULl6d+G1VW1d7KexbmsRqlTsKyzn0=",
+        "APP_URL": "https://travel-assist-peach.vercel.app",
         "CACHE_STORE": "array",
         "SESSION_DRIVER": "array",
         "LOG_CHANNEL": "stderr",
