@@ -23,6 +23,7 @@ try {
         '/tmp/storage/framework/sessions',
         '/tmp/storage/framework/views',
         '/tmp/storage/logs',
+        '/tmp/cache',
     ];
 
     foreach ($storageDirs as $dir) {

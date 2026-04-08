@@ -33,8 +33,24 @@ $app = Application::configure(basePath: dirname(__DIR__))
     })->create();
 
 // Vercel serverless: redirect storage to /tmp (filesystem is read-only)
+// and fix package auto-discovery (vendor/ is at repo root, not src/vendor/)
 if (getenv('VERCEL')) {
     $app->useStoragePath('/tmp/storage');
+
+    // The root composer.json installs vendor/ at the repo root.
+    // Laravel's basePath is src/, so it looks for src/vendor/ which doesn't exist.
+    // Override PackageManifest to point at the real vendor directory.
+    $repoRoot = dirname(__DIR__, 2);
+    $app->singleton(
+        \Illuminate\Foundation\PackageManifest::class,
+        function () use ($repoRoot) {
+            return new \Illuminate\Foundation\PackageManifest(
+                new \Illuminate\Filesystem\Filesystem(),
+                $repoRoot,
+                '/tmp/cache/packages.php'
+            );
+        }
+    );
 }
 
 return $app;
