@@ -1,23 +1,23 @@
 {
     "version": 2,
     "functions": {
-        "api/*.php": {
+        "src/api/*.php": {
             "runtime": "vercel-php@0.7.2"
         }
     },
     "routes": [
         {
             "src": "/(.*)",
-            "dest": "/api/index.php"
+            "dest": "/src/api/index.php"
         }
     ],
     "env": {
         "APP_ENV": "production",
-        "APP_DEBUG": "false",
+        "APP_DEBUG": "true",
         "CACHE_STORE": "array",
         "SESSION_DRIVER": "array",
         "LOG_CHANNEL": "stderr",
-        "LOG_LEVEL": "error",
+        "LOG_LEVEL": "debug",
         "DB_CONNECTION": "sqlite"
     }
 }
