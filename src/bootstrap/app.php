@@ -32,9 +32,26 @@ $app = Application::configure(basePath: dirname(__DIR__))
         //
     })->create();
 
-// Vercel serverless: redirect storage to /tmp (filesystem is read-only)
-// and fix package auto-discovery (vendor/ is at repo root, not src/vendor/)
+// Vercel serverless: redirect storage and bootstrap caches to /tmp (read-only /var/task)
+// and fix package auto-discovery (vendor/ is at repo root, not src/vendor/).
 if (getenv('VERCEL')) {
+    // api/index.php creates /tmp/cache before bootstrap. Writable caches avoid empty
+    // app.providers (skipped merge when config is "cached" from a missing/stale file)
+    // and failed services.php writes under src/bootstrap/cache/.
+    $writableCache = '/tmp/cache';
+    foreach (
+        [
+            'APP_CONFIG_CACHE' => $writableCache.'/config.php',
+            'APP_SERVICES_CACHE' => $writableCache.'/services.php',
+            'APP_EVENTS_CACHE' => $writableCache.'/events.php',
+            'APP_ROUTES_CACHE' => $writableCache.'/routes-v7.php',
+        ] as $key => $path
+    ) {
+        putenv($key.'='.$path);
+        $_ENV[$key] = $path;
+        $_SERVER[$key] = $path;
+    }
+
     $app->useStoragePath('/tmp/storage');
 
     // The root composer.json installs vendor/ at the repo root.
@@ -51,6 +68,15 @@ if (getenv('VERCEL')) {
             );
         }
     );
+
+    // If provider loading failed (e.g. empty app.providers from a bad config cache),
+    // AppServiceProvider may never run — register View before the request pipeline
+    // needs ResponseFactory (including response()->json()).
+    $app->booting(function () use ($app) {
+        if (! $app->bound('view')) {
+            $app->register(\Illuminate\View\ViewServiceProvider::class);
+        }
+    });
 }
 
 return $app;
