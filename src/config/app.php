@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\ServiceProvider;
+
 return [
 
     /*
@@ -122,5 +124,18 @@ return [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Autoloaded Service Providers
+    |--------------------------------------------------------------------------
+    |
+    | Keep this list explicit so serverless / cached config always registers
+    | framework providers (e.g. View). bootstrap/providers.php entries are merged
+    | in by Laravel after load.
+    |
+    */
+
+    'providers' => ServiceProvider::defaultProviders()->toArray(),
 
 ];
